@@ -1,0 +1,51 @@
+name: Verify skill installation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/**"
+      - ".github/workflows/install.yml"
+  pull_request:
+    paths:
+      - "skills/**"
+      - ".github/workflows/install.yml"
+  workflow_dispatch:
+
+env:
+  DISABLE_TELEMETRY: "1"
+
+jobs:
+  install:
+    name: Install (${{ matrix.agent }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        agent: [opencode]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install skills from this repo
+        run: npx skills add . --skill '*' -a ${{ matrix.agent }} -y --copy
+
+      - name: Verify installed files
+        run: |
+          found=0
+          for skill in skills/*/SKILL.md; do
+            name=$(basename "$(dirname "$skill")")
+            if [ ! -f ".agents/skills/$name/SKILL.md" ] && [ ! -f ".claude/skills/$name/SKILL.md" ]; then
+              echo "::error::Skill '$name' was not installed correctly"
+            else
+              echo "Skill '$name' installed for ${{ matrix.agent }}"
+              found=$((found + 1))
+            fi
+          done
+          [ "$found" -gt 0 ] || { echo "::error::No skills were installed"; exit 1; }
+
+      - name: List installed skills
+        run: npx skills list -a ${{ matrix.agent }}
