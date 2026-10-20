@@ -2,6 +2,13 @@
 name: pre-flight
 description: Pre-production code review against a user-chosen healthy point. Use when asked to review a branch before merge, whether it's safe to ship, or what blocks a PR.
 disable-model-invocation: true
+
+parameters:
+  healthy_point:
+    type: string
+    required: false
+    default: main
+    description: A Git commit SHA, branch, tag, or ref identifying a known healthy state of the application.
 ---
 
 # Pre-production code review
@@ -10,12 +17,12 @@ Find every reason this branch should NOT ship. No verdict until each one is reso
 
 ## Phase 1: Pin the healthy point
 
-The user gives you the healthy point: a commit `SHA`, `branch`, `tag`, `main`, `HEAD~5`, anything naming a moment when the app worked (production). If they didn't specify one, use `main`.
+The `healthy_point` parameter identifies the known healthy state to compare against. It can be a commit SHA, branch, tag, `main`, `HEAD~5`, or any other valid Git ref.
 
 Before going further:
 
-1. Confirm it resolves: `git rev-parse <healthy-point>`.
-2. Write the diff command once and reuse it everywhere: `git diff <healthy-point>...HEAD`. Three dots, so git compares against the merge-base. Run `git status` too; flag uncommitted changes as not part of the review.
+1. Confirm it resolves: `git rev-parse {{healthy_point}}`
+2. Write the diff command once and reuse it everywhere: `git diff {{healthy_point}}...HEAD` Three dots, so Git compares against the merge-base.
 3. Confirm the diff is non-empty. A bad ref or empty diff should fail here, not mid-review.
 
 ## Phase 2: Read the diff and its context
